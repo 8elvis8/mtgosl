@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MTGOSL – Open Set Lottery</title>
+<style>
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#0f172a;color:#fff}
+header{background:#020617;padding:18px}
+h1{margin:0}
+nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+nav button{background:#1e293b;color:white;border:none;padding:8px 14px;border-radius:8px;cursor:pointer}
+nav button:hover{background:#334155}
+.container{max-width:1200px;margin:auto;padding:30px}
+.card{background:#1e293b;border-radius:14px;padding:22px;margin-bottom:20px}
+button.primary{background:#22c55e;color:black;font-weight:bold;border:none;padding:12px 18px;border-radius:10px;cursor:pointer}
+button.primary:hover{background:#16a34a}
+input,textarea,select{width:100%;padding:10px;border-radius:8px;border:none;margin-top:6px}
+.set{background:#334155;padding:10px;border-radius:8px;margin-top:8px}
+.small{font-size:14px;opacity:.8}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.hidden{display:none}
+table{width:100%;border-collapse:collapse}
+td,th{border-bottom:1px solid #334155;padding:8px;text-align:left}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.spin{animation:spin 0.6s linear infinite}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>MTGOSL – Open Set Lottery</h1>
+<nav>
+<button onclick="showPage('home')">Home</button>
+<button onclick="showPage('lottery')">Lottery</button>
+<button onclick="showPage('current')">Current Format</button>
+<button onclick="showPage('leaderboard')">Leaderboard</button>
+<button onclick="showPage('decklists')">Decklists</button>
+<button onclick="showPage('vote')">Voto Finale</button>
+<button onclick="showPage('players')">Giocatori</button>
+<button onclick="showPage('regulation')">Regolamento</button>
+</nav>
+</header>
+
+<div class="container">
+
+<!-- HOME -->
+<div id="home">
+<div class="card">
+<h2>Cos'è MTGOSL</h2>
+<p>Lega competitiva di Magic basata su formati casuali generati tramite Open Set Lottery.</p>
+<ul>
+<li>6 cicli all'anno</li>
+<li>2 tornei per ciclo</li>
+<li>4 set casuali ogni ciclo</li>
+<li>finale live con premi</li>
+</ul>
+</div>
+</div>
+
+<!-- LOTTERY -->
+<div id="lottery" class="hidden">
+<div class="card">
+<h2>Open Set Lottery</h2>
+<p class="small">1 set degli ultimi 4 anni + 3 casuali. Cooldown automatico 3 cicli.</p>
+</div>
+
+<div class="grid">
+
+<div class="card">
+<h3>Seed pubblico</h3>
+<input id="seedInput" placeholder="hash blocco o seed pubblico">
+</div>
+
+<div class="card">
+<h3>Ciclo</h3>
+<input id="cycleInput" type="number" placeholder="Numero ciclo">
+</div>
+
+</div>
+
+<div class="card">
+<button class="primary" onclick="animateLottery()">Sorteggia</button>
+<div id="result"></div>
+</div>
+</div>
+
+<!-- CURRENT FORMAT -->
+<div id="current" class="hidden">
+<div class="card">
+<h2>Formato Corrente</h2>
+<div id="currentSets"></div>
+</div>
+
+<div class="card">
+<h3>Storico Cicli</h3>
+<div id="history"></div>
+</div>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="leaderboard" class="hidden">
+<div class="card">
+<h2>Classifica Stagione</h2>
+<table>
+<thead>
+<tr><th>Giocatore</th><th>Punti</th></tr>
+</thead>
+<tbody id="leaderboardTable"></tbody>
+</table>
+</div>
+
+<div class="card">
+<h3>Aggiungi risultato torneo</h3>
+<input id="playerName" placeholder="Giocatore">
+<input id="playerPoints" type="number" placeholder="Punti">
+<button class="primary" onclick="addPoints()">Aggiungi</button>
+</div>
+</div>
+
+<!-- DECKLISTS -->
+<div id="decklists" class="hidden">
+<div class="card">
+<h2>Decklists</h2>
+<input id="deckPlayer" placeholder="Giocatore">
+<input id="deckLink" placeholder="Link deck (Moxfield ecc)">
+<button class="primary" onclick="addDeck()">Aggiungi</button>
+</div>
+
+<div class="card">
+<div id="deckList"></div>
+</div>
+</div>
+
+<!-- VOTE -->
+<div id="vote" class="hidden">
+<div class="card">
+<h2>Votazione Set Finale</h2>
+<select id="voteSet"></select>
+<button class="primary" onclick="voteSet()">Vota</button>
+</div>
+
+<div class="card">
+<h3>Risultati votazione</h3>
+<div id="voteResults"></div>
+</div>
+</div>
+
+<!-- PLAYERS -->
+<div id="players" class="hidden">
+<div class="card">
+<h2>Registrazione Giocatori</h2>
+<input id="newPlayer" placeholder="Nome giocatore">
+<button class="primary" onclick="addPlayer()">Registra</button>
+</div>
+
+<div class="card">
+<h3>Giocatori registrati</h3>
+<div id="playerList"></div>
+</div>
+</div>
+
+<!-- REGULATION -->
+<div id="regulation" class="hidden">
+<div class="card">
+<h2>Struttura Lega</h2>
+<ul>
+<li>6 cicli all'anno</li>
+<li>2 tornei per ciclo</li>
+<li>12 tornei totali</li>
+<li>Contano i migliori 6 risultati</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>Formato Mazzi</h2>
+<ul>
+<li>Minimo 60 carte</li>
+<li>Sideboard 15</li>
+<li>Max 4 copie</li>
+<li>Carte solo dai set estratti</li>
+<li>Basic lands sempre legali</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>Sistema Punti</h2>
+<table>
+<tr><td>1°</td><td>15</td></tr>
+<tr><td>2°</td><td>12</td></tr>
+<tr><td>Top4</td><td>10</td></tr>
+<tr><td>Top8</td><td>8</td></tr>
+<tr><td>Partecipazione</td><td>2</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>Finale</h2>
+<ul>
+<li>2 set votati dai partecipanti</li>
+<li>2 set sorteggiati</li>
+<li>Bonus bye per i migliori in classifica</li>
+</ul>
+</div>
+</div>
+
+</div>
+
+<script>
+
+const COOLDOWN=3
+
+const sets=[
+"Modern Horizons","Modern Horizons 2","Modern Horizons 3",
+"Ultimate Masters","Double Masters","Double Masters 2022",
+"Dominaria","Guilds of Ravnica","Ravnica Allegiance","War of the Spark",
+"Throne of Eldraine","Theros Beyond Death","Ikoria","Zendikar Rising",
+"Kaldheim","Strixhaven","Adventures in the Forgotten Realms",
+"Innistrad Midnight Hunt","Innistrad Crimson Vow","Kamigawa Neon Dynasty",
+"Streets of New Capenna","Dominaria United","The Brothers War",
+"Phyrexia All Will Be One","March of the Machine","Wilds of Eldraine",
+"Lost Caverns of Ixalan","Murders at Karlov Manor","Outlaws of Thunder Junction",
+"Bloomburrow","Duskmourn House of Horror"
+]
+
+const years={
+"Modern Horizons":2019,"Modern Horizons 2":2021,"Modern Horizons 3":2024,
+"Ultimate Masters":2018,"Double Masters":2020,"Double Masters 2022":2022,
+"Dominaria":2018,"Guilds of Ravnica":2018,"Ravnica Allegiance":2019,
+"War of the Spark":2019,"Throne of Eldraine":2019,"Theros Beyond Death":2020,
+"Ikoria":2020,"Zendikar Rising":2020,"Kaldheim":2021,"Strixhaven":2021,
+"Adventures in the Forgotten Realms":2021,"Innistrad Midnight Hunt":2021,
+"Innistrad Crimson Vow":2021,"Kamigawa Neon Dynasty":2022,
+"Streets of New Capenna":2022,"Dominaria United":2022,"The Brothers War":2022,
+"Phyrexia All Will Be One":2023,"March of the Machine":2023,
+"Wilds of Eldraine":2023,"Lost Caverns of Ixalan":2023,
+"Murders at Karlov Manor":2024,"Outlaws of Thunder Junction":2024,
+"Bloomburrow":2024,"Duskmourn House of Horror":2024
+}
+
+function showPage(id){
+["home","lottery","current","leaderboard","decklists","vote","players","regulation"].forEach(p=>{
+document.getElementById(p).classList.add("hidden")
+})
+document.getElementById(id).classList.remove("hidden")
+}
+
+function seededRandom(seed){let x=Math.sin(seed++)*10000;return x-Math.floor(x)}
+
+function stringToSeed(str){let hash=0;for(let i=0;i<str.length;i++){hash=str.charCodeAt(i)+((hash<<5)-hash)}return Math.abs(hash)}
+
+function shuffle(array,seed){for(let i=array.length-1;i>0;i--){let j=Math.floor(seededRandom(seed+i)*(i+1));[array[i],array[j]]=[array[j],array[i]]}return array}
+
+function animateLottery(){
+let resultDiv=document.getElementById("result")
+resultDiv.innerHTML="<div class='spin'>🎲</div> Estrazione in corso..."
+setTimeout(runLottery,1200)
+}
+
+function runLottery(){
+
+let seedText=document.getElementById("seedInput").value
+let cycle=parseInt(document.getElementById("cycleInput").value)
+
+if(!seedText||!cycle){alert("Inserisci seed e ciclo");return}
+
+let seed=stringToSeed(seedText)
+
+let history=JSON.parse(localStorage.getItem("mtgosl_history")||"[]")
+
+let blocked=[]
+
+history.forEach(h=>{
+if(cycle-h.cycle<=COOLDOWN){blocked.push(...h.sets)}
+})
+
+let available=sets.filter(s=>!blocked.includes(s))
+
+let year=new Date().getFullYear()
+
+let recent=available.filter(s=>years[s]>=year-4)
+
+let first=recent[Math.floor(seededRandom(seed)*recent.length)]
+
+available=available.filter(s=>s!==first)
+
+shuffle(available,seed)
+
+let result=[first,available[0],available[1],available[2]]
+
+history.push({cycle:cycle,sets:result})
+
+localStorage.setItem("mtgosl_history",JSON.stringify(history))
+
+let html="<h3>Risultato</h3>"
+
+result.forEach(s=>{html+=`<div class='set'>${s}</div>`})
+
+html+=`<p class='small'>Seed: ${seedText}</p>`
+
+let link=`${location.origin}${location.pathname}?seed=${seedText}&cycle=${cycle}`
+
+html+=`<p class='small'>Link verificabile:<br>${link}</p>`
+
+document.getElementById("result").innerHTML=html
+
+updateCurrent()
+
+}
+
+function updateCurrent(){
+let history=JSON.parse(localStorage.getItem("mtgosl_history")||"[]")
+let currentDiv=document.getElementById("currentSets")
+let histDiv=document.getElementById("history")
+
+if(history.length===0){currentDiv.innerHTML="Nessun formato";return}
+
+let last=history[history.length-1]
+
+currentDiv.innerHTML=""
+last.sets.forEach(s=>{currentDiv.innerHTML+=`<div class='set'>${s}</div>`})
+
+histDiv.innerHTML=""
+
+history.slice().reverse().forEach(h=>{
+let block=`<div class='card'><b>Ciclo ${h.cycle}</b>`
+h.sets.forEach(s=>{block+=`<div class='set'>${s}</div>`})
+block+="</div>"
+histDiv.innerHTML+=block
+})
+}
+
+function addPoints(){
+let name=document.getElementById("playerName").value
+let pts=parseInt(document.getElementById("playerPoints").value)
+
+let data=JSON.parse(localStorage.getItem("mtgosl_points")||"{}")
+
+if(!data[name])data[name]=0
+
+data[name]+=pts
+
+localStorage.setItem("mtgosl_points",JSON.stringify(data))
+
+renderLeaderboard()
+}
+
+function renderLeaderboard(){
+let data=JSON.parse(localStorage.getItem("mtgosl_points")||"{}")
+let table=document.getElementById("leaderboardTable")
+
+table.innerHTML=""
+
+Object.entries(data).sort((a,b)=>b[1]-a[1]).forEach(e=>{
+
+let row=`<tr><td>${e[0]}</td><td>${e[1]}</td></tr>`
+
+table.innerHTML+=row
+
+})
+}
+
+function addDeck(){
+let player=document.getElementById("deckPlayer").value
+let link=document.getElementById("deckLink").value
+
+let decks=JSON.parse(localStorage.getItem("mtgosl_decks")||"[]")
+
+decks.push({player,link})
+
+localStorage.setItem("mtgosl_decks",JSON.stringify(decks))
+
+renderDecks()
+}
+
+function renderDecks(){
+let decks=JSON.parse(localStorage.getItem("mtgosl_decks")||"[]")
+let div=document.getElementById("deckList")
+
+div.innerHTML=""
+
+decks.forEach(d=>{
+div.innerHTML+=`<div class='set'><b>${d.player}</b><br><a href='${d.link}' target='_blank'>Deck</a></div>`
+})
+}
+
+function voteSet(){
+let set=document.getElementById("voteSet").value
+
+let votes=JSON.parse(localStorage.getItem("mtgosl_votes")||"{}")
+
+if(!votes[set])votes[set]=0
+
+votes[set]++
+
+localStorage.setItem("mtgosl_votes",JSON.stringify(votes))
+
+renderVotes()
+}
+
+function renderVotes(){
+let votes=JSON.parse(localStorage.getItem("mtgosl_votes")||"{}")
+let div=document.getElementById("voteResults")
+
+div.innerHTML=""
+
+Object.entries(votes).sort((a,b)=>b[1]-a[1]).forEach(v=>{
+
+div.innerHTML+=`<div class='set'>${v[0]} — ${v[1]} voti</div>`
+
+})
+}
+
+function addPlayer(){
+let name=document.getElementById("newPlayer").value
+
+let players=JSON.parse(localStorage.getItem("mtgosl_players")||"[]")
+
+players.push(name)
+
+localStorage.setItem("mtgosl_players",JSON.stringify(players))
+
+renderPlayers()
+}
+
+function renderPlayers(){
+let players=JSON.parse(localStorage.getItem("mtgosl_players")||"[]")
+let div=document.getElementById("playerList")
+
+div.innerHTML=""
+
+players.forEach(p=>{div.innerHTML+=`<div class='set'>${p}</div>`})
+}
+
+function populateVoteSets(){
+let select=document.getElementById("voteSet")
+
+sets.forEach(s=>{
+let opt=document.createElement("option")
+opt.value=s
+opt.textContent=s
+select.appendChild(opt)
+})
+}
+
+populateVoteSets()
+renderLeaderboard()
+renderDecks()
+renderVotes()
+renderPlayers()
+updateCurrent()
+
+</script>
+
+</body>
+</html>
